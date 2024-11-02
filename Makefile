@@ -5,29 +5,26 @@ CFLAGS = -Wall -g
 # Target executable name
 TARGET = maze
 
-# Automatically find all .c files in the current directory
-SRCS = $(wildcard *.c)
+# Find all .c files in the directory
+ALL_SRCS = $(wildcard *.c)
 
-# Print the source files detected (for debugging)
-$(info Source files: $(SRCS))
+# Separate main.c and other sources
+MAIN_SRC = main.c
+OTHER_SRCS = $(filter-out main.c, $(ALL_SRCS))
 
-# Automatically convert each .c file to a .o file
-OBJS = $(SRCS:.c=.o)
+# Object file for main.c
+MAIN_OBJ = $(MAIN_SRC:.c=.o)
 
 # Default target to build the program
 all: $(TARGET)
 
-# Rule to link object files into the final executable
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS)
+# Link main.o with other source files directly
+$(TARGET): $(MAIN_OBJ)
+	$(CC) $(CFLAGS) -o $(TARGET) $(MAIN_OBJ) $(OTHER_SRCS)
 
-# Rule to compile each .c file into an .o file
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
-
-# Clean up object files and the executable
-clean:
-	rm -f $(OBJS) $(TARGET)
+# Rule to compile main.c into main.o
+$(MAIN_OBJ): $(MAIN_SRC)
+	$(CC) $(CFLAGS) -c $(MAIN_SRC) -o $(MAIN_OBJ)
 
 # Phony targets
 .PHONY: all clean
