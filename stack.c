@@ -22,10 +22,10 @@ void push_stack(Stack *stack, int value1, int value2) {
     stack->arr[stack->top][0] = value1;
     stack->arr[stack->top][1] = value2;
     // debug
-    #ifdef DEBUG_STACK
-        printf("Pushed [%d, %d] onto the stack\n", value1, value2);
-        printf("Top: %d\n", stack->top);
-    #endif
+#ifdef DEBUG_STACK
+    printf("Pushed [%d, %d] onto the stack\n", value1, value2);
+    printf("Top: %d\n", stack->top);
+#endif
 }
 
 int* pop_stack(Stack *stack) {
@@ -36,10 +36,10 @@ int* pop_stack(Stack *stack) {
     int* popped = stack->arr[stack->top];
     stack->top--;
     // debug
-    #ifdef DEBUG_STACK
-        printf("Popped [%d, %d] from the stack\n", popped[0], popped[1]);
-        printf("Top: %d\n", stack->top);
-    #endif
+#ifdef DEBUG_STACK
+    printf("Popped [%d, %d] from the stack\n", popped[0], popped[1]);
+    printf("Top: %d\n", stack->top);
+#endif
     return popped;
 }
 
