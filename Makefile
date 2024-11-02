@@ -1,6 +1,6 @@
 # Compiler and flags
 CC = gcc
-CFLAGS = -Wall -g
+CFLAGS = -Wall
 
 # Target executable name
 TARGET = maze
@@ -16,7 +16,14 @@ OTHER_SRCS = $(filter-out main.c, $(ALL_SRCS))
 MAIN_OBJ = $(MAIN_SRC:.c=.o)
 
 # Default target to build the program
+.PHONY: all
+all: CFLAGS += -O2 # For optimization
 all: $(TARGET)
+
+# Debug build (-g flag)
+.PHONY: debug
+debug: CFLAGS += -g
+debug: $(TARGET)
 
 # Link main.o with other source files directly
 $(TARGET): $(MAIN_OBJ)
@@ -26,6 +33,8 @@ $(TARGET): $(MAIN_OBJ)
 $(MAIN_OBJ): $(MAIN_SRC)
 	$(CC) $(CFLAGS) -c $(MAIN_SRC) -o $(MAIN_OBJ)
 
-# Phony targets
-.PHONY: all clean
-
+# Clean up object files and the executable
+.PHONY: clean
+clean:
+	rm -f $(MAIN_OBJ) $(TARGET)
+	rm -rf $(TARGET).dSYM
