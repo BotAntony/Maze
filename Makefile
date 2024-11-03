@@ -1,40 +1,39 @@
-# Compiler and flags
+# Compiler and base flags
 CC = gcc
 CFLAGS = -Wall
+SRC_DIR = src# Directory for source files
 
-# Target executable name
-TARGET = maze
+# Find all .c files in the source directory
+SRCS = $(wildcard $(SRC_DIR)/*.c)
+GAME_SRCS = $(filter-out $(SRC_DIR)/main.c, $(SRCS))
 
-# Find all .c files in the directory
-ALL_SRCS = $(wildcard *.c)
+# Define executables
+GAME_EXEC = maze
+PRINT_EXEC = print_maze
 
-# Separate main.c and other sources
-MAIN_SRC = main.c
-OTHER_SRCS = $(filter-out main.c, $(ALL_SRCS))
+# Source files for each executable
+PRINT_SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/maze_gen.c $(SRC_DIR)/stack.c
 
-# Object file for main.c
-MAIN_OBJ = $(MAIN_SRC:.c=.o)
-
-# Default target to build the program
+# Default target to build everything
 .PHONY: all
-all: CFLAGS += -O2 # For optimization
-all: $(TARGET)
+all: $(GAME_EXEC) $(PRINT_EXEC)
 
-# Debug build (-g flag)
+# Rule to build the game executable
+$(GAME_EXEC):
+	$(CC) $(CFLAGS) -o $(GAME_EXEC) $(GAME_SRCS) -lncurses
+
+# Rule to build the print_maze executable
+$(PRINT_EXEC):
+	$(CC) $(CFLAGS) -o $(PRINT_EXEC) $(PRINT_SRCS)
+
+# Debug target for both executables
 .PHONY: debug
 debug: CFLAGS += -g
-debug: $(TARGET)
+debug: all
 
-# Link main.o with other source files directly
-$(TARGET): $(MAIN_OBJ)
-	$(CC) $(CFLAGS) -o $(TARGET) $(MAIN_OBJ) $(OTHER_SRCS)
-
-# Rule to compile main.c into main.o
-$(MAIN_OBJ): $(MAIN_SRC)
-	$(CC) $(CFLAGS) -c $(MAIN_SRC) -o $(MAIN_OBJ)
-
-# Clean up object files and the executable
+# Clean up executables and .dSYM directory
 .PHONY: clean
 clean:
-	rm -f $(MAIN_OBJ) $(TARGET)
-	rm -rf $(TARGET).dSYM
+	rm -f $(GAME_EXEC) $(PRINT_EXEC)
+	rm -rf $(GAME_EXEC).dSYM $(PRINT_EXEC).dSYM
+
