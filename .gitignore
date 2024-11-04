@@ -1,2 +1,5 @@
 # My beloved
 .DS_Store
+
+# Binaries
+bin/*
