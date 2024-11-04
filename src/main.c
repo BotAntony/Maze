@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
             } else {
                 if (param == 'h') {
                     printf("This program generates a maze using DFS algorithm.\n\n");
-                    printf("Usage:\n    maze [options]\n\n");
+                    printf("Usage:\n    print_maze [options]\n\n");
                     printf("Options:\n");
                     printf("    -c <cols>     Set the amount of columns (10 by defualt, range 4-64)\n");
                     printf("    -r <rows>     Set the amount of rows (10 by default, range 4-64)\n");

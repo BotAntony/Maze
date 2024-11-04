@@ -8,7 +8,7 @@ TBA: simple console-based maze game.
 1. Copy this repo
 2. Use `make print_maze` command to create `print_maze` binary. Use `make maze` to compile the game. All binaries are compiled to the folder `bin`.
  1. Use `make debug` to compile binaries with `-g` flag and `make clean` to remove binaries and debug files.
-3. Run using `./print_maze` (prints maze) or `./maze` (game).
+3. Run using `bin/print_maze` (prints maze) or `bin/maze` (game).
 
 ## Usage
 ### print_maze

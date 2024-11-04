@@ -41,7 +41,24 @@ void drawRoom(Cell** room, int height, int width) {
             }
         }
     }
-    refresh();
+}
+
+void displayMinimap(int max_y, int max_x, int** maze, int mazeHeight, int mazeWidth, int coords[2]) {
+    // TBA
+    int i = 0, j = 0;
+    for (; i < mazeHeight; ++i) {
+        for (; j < mazeWidth; ++j) {
+            if (maze[i][j] == 1) {
+                mvaddch(i, j, '8');
+            } else {
+                if (coords[0] == j && coords[1] == i) {
+                    mvaddch(i, j, 'O');
+                } else {
+                    mvaddch(i, j, ' ');
+                }
+            }
+        }
+    }
 }
 
 void checkWalls(int** maze, int mazeHeight, int mazeWidth, int currHeight, int currWidth, Walls* currRoomsWalls) {
@@ -75,6 +92,24 @@ void resetWalls(Walls* walls) {
     walls->bottom = false;
 }
 
+void fillRoom(Walls currRoomsWalls, Cell** room, int max_y, int max_x) {
+    for (int i = 0; i < max_y; ++i) {
+        for (int j = 0; j < max_x; ++j) {
+            if (currRoomsWalls.left && j == 0) {
+                room[i][j] = WALL;
+            } else if (currRoomsWalls.right && j == max_x - 1) {
+                room[i][j] = WALL;
+            } else if (currRoomsWalls.bottom && i == max_y - 1) {
+                room[i][j] = WALL;
+            } else if (currRoomsWalls.top && i == 0) {
+                room[i][j] = WALL;
+            } else {
+                room[i][j] = EMPTY;
+            }
+        }
+    }
+}
+
 int returnError(char* error) {
     // end the ncurses library
     endwin();
@@ -92,14 +127,10 @@ int main(int argc, char** argv) {
     int seed = (int)time(NULL);
     Cell** room;
     int** maze;
-    Walls* currRoomsWalls = (Walls*)malloc(sizeof(Walls));
-    if (currRoomsWalls == NULL) {
-        // malloc error
-        printf("ERROR SUKA!!!");
-        return -1;
-    }
-    resetWalls(currRoomsWalls);
+    Walls currRoomsWalls;
+    resetWalls(&currRoomsWalls);
     int finalRoom[2], currRoomCoords[2] = {0, 0};
+    bool minimap = false;
     int _temp_max_x, _temp_max_y;
 
     // process args
@@ -136,13 +167,18 @@ int main(int argc, char** argv) {
                     printf("    -c <cols>     Set the amount of columns (10 by defualt, range 4-64)\n");
                     printf("    -r <rows>     Set the amount of rows (10 by default, range 4-64)\n");
                     printf("    -s <seed>     Set a seed (time() by default, an integer value)\n");
+                    printf("    -m <seed>     Show a minimap\n");
                     printf("    -h <help>     Display this page, do not print the maze\n");
                     return 0;
                 }
-                if (!(param == 's' || param == 'c' || param == 'r')) {
+                if (!(param == 's' || param == 'c' || param == 'r' || param == 'm')) {
                     printf("Error: unknown parameter -%c!\n", param);
                 } else {
-                    printf("Error: parameter -%c requires a value!\n", param);
+                    if (param == 'm') {
+                        minimap = true;
+                    } else {
+                        printf("Error: parameter -%c requires a value!\n", param);
+                    }
                 }
             }
         }
@@ -150,14 +186,10 @@ int main(int argc, char** argv) {
 
     // ncurses init
     initscr();
-#ifdef DEBUG_GAME
     noecho();
     cbreak();
     raw();
-    printf("Cursor is here!\n");
-#else
     curs_set(0);
-#endif
 
     // define room size
     getmaxyx(stdscr, _temp_max_y, _temp_max_x);
@@ -177,30 +209,25 @@ int main(int argc, char** argv) {
     generateMaze(maze, mazeHeight, mazeWidth, seed, finalRoom);
 
     // check the neighbor rooms
-    checkWalls(maze, mazeHeight, mazeWidth, currRoomCoords[1], currRoomCoords[0], currRoomsWalls);
+    checkWalls(maze, mazeHeight, mazeWidth, currRoomCoords[1], currRoomCoords[0], &currRoomsWalls);
 
     // fill the cells
-    for (int i = 0; i < max_y; ++i) {
-        for (int j = 0; j < max_x; ++j) {
-            if (i == 0 || i == max_y - 1 || j == 0 || j == max_x - 1) {
-                room[i][j] = WALL;
-            } else {
-                room[i][j] = EMPTY;
-            }
-        }
-    }
-
+    fillRoom(currRoomsWalls, room, max_y, max_x);
 
     // init the player
     room[y][x] = PLAYER;
     drawRoom(room, max_y, max_x);
+    if (minimap) {
+        displayMinimap(max_y, max_x, maze, mazeHeight, mazeWidth);
+    }
+    refresh();
 
     // game loop
     while ((ch = getch()) != 'q') {
         // return error if the resolution is less than the initial one
         getmaxyx(stdscr, _temp_max_y, _temp_max_x);
         if (_temp_max_x < max_x || _temp_max_y < max_y) {
-            return returnError("the current resolution is smaller than the initial one!");
+            return returnError("the current resolution is smaller than the initial one!\n");
         }
 
         room[y][x] = EMPTY; // clear previous position
@@ -230,6 +257,10 @@ int main(int argc, char** argv) {
 
         room[y][x] = PLAYER;
         drawRoom(room, max_y, max_x);
+        if (minimap) {
+            displayMinimap(max_y, max_x, maze, mazeHeight, mazeWidth);
+        }
+        refresh();
     }
 
     // free memory
