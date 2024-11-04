@@ -37,7 +37,7 @@ void shuffle_array(int rows, int cols, int array[rows][cols]) {
 #endif
 }
 
-void generateMaze(int **maze, int height, int width, int seed) {
+void generateMaze(int **maze, int height, int width, int seed, int* finalCoords) {
     Stack stack;
     srand(seed);
 
@@ -73,6 +73,8 @@ void generateMaze(int **maze, int height, int width, int seed) {
             if ((0 <= nx && nx < width) && (0 <= ny && ny < height) && maze[ny][nx] == 1) {
                 maze[(y + ny) / 2][(x + nx) / 2] = 0;
                 maze[ny][nx] = 0;
+                finalCoords[0] = x;
+                finalCoords[1] = y;
                 push_stack(&stack, nx, ny);
                 break;
             }
