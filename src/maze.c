@@ -1,6 +1,22 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <ncurses.h>
+#include <time.h>
+#include <stdbool.h>
+
+#include "maze_gen.h"
+
+// #define DEBUG_GAME 1
+
+#define HEIGHT_CONST 10
+#define WIDTH_CONST 10
+
+typedef struct {
+    bool left;
+    bool right;
+    bool top;
+    bool bottom;
+} Walls;
 
 typedef enum {
     EMPTY,
@@ -21,10 +37,42 @@ void drawRoom(Cell** room, int height, int width) {
                 case EMPTY:
                 default:
                     mvaddch(i, j, '.');
+                    break;
             }
         }
     }
     refresh();
+}
+
+void checkWalls(int** maze, int mazeHeight, int mazeWidth, int currHeight, int currWidth, Walls* currRoomsWalls) {
+    if (mazeHeight <= currHeight) {
+        currRoomsWalls->right = true;
+        return;
+    }
+    if (mazeWidth <= currWidth) {
+        currRoomsWalls->bottom = true;
+        return;
+    }
+    // check whether the neighbor rooms are walls
+    if (currWidth <= 0 || maze[currHeight][currWidth - 1] == 1) {
+        currRoomsWalls->left = true;
+    }
+    if (currWidth >= mazeWidth || maze[currHeight][currWidth + 1] == 1) {
+        currRoomsWalls->right = true;
+    }
+    if (currHeight <= 0 || maze[currHeight - 1][currWidth] == 1) {
+        currRoomsWalls->top = true;
+    }
+    if (currHeight <= mazeHeight || maze[currHeight + 1][currWidth] == 1) {
+        currRoomsWalls->bottom = true;
+    }
+}
+
+void resetWalls(Walls* walls) {
+    walls->left = false;
+    walls->right = false;
+    walls->top = false;
+    walls->bottom = false;
 }
 
 int returnError(char* error) {
@@ -39,15 +87,77 @@ int returnError(char* error) {
 int main(int argc, char** argv) {
     int x = 1, y = 1;
     int ch;
+    char param;
+    int mazeHeight = HEIGHT_CONST, mazeWidth = WIDTH_CONST;
+    int seed = (int)time(NULL);
     Cell** room;
+    int** maze;
+    Walls* currRoomsWalls = (Walls*)malloc(sizeof(Walls));
+    if (currRoomsWalls == NULL) {
+        // malloc error
+        printf("ERROR SUKA!!!");
+        return -1;
+    }
+    resetWalls(currRoomsWalls);
+    int finalRoom[2], currRoomCoords[2] = {0, 0};
     int _temp_max_x, _temp_max_y;
+
+    // process args
+    for (int i = 1; i < argc; ++i) {
+        if (argv[i][0] == '-') {
+            param = argv[i][1];
+            if (i + 1 < argc) {
+                switch (param) {
+                    case 'r':
+                        mazeHeight = atoi(argv[++i]);
+                        if (mazeHeight < 4 || mazeHeight > 64) {
+                            mazeHeight = HEIGHT_CONST;
+                        }
+                        break;
+                    case 'c':
+                        mazeWidth = atoi(argv[++i]);
+                        if (mazeWidth < 4 || mazeWidth > 64) {
+                            mazeWidth = WIDTH_CONST;
+                        }
+                        break;
+                    case 's':
+                        seed = atoi(argv[++i]);
+                        break;
+                    default:
+                        printf("Error: unknown parameter!\n");
+                        break;
+                }
+            } else {
+                if (param == 'h') {
+                    printf("This program starts a simple game where you need to find a specific room in a maze\n\n");
+                    printf("Usage:\n    maze [options]\n\n");
+                    printf("    use `wasd` to move and `q` to exit");
+                    printf("Options:\n");
+                    printf("    -c <cols>     Set the amount of columns (10 by defualt, range 4-64)\n");
+                    printf("    -r <rows>     Set the amount of rows (10 by default, range 4-64)\n");
+                    printf("    -s <seed>     Set a seed (time() by default, an integer value)\n");
+                    printf("    -h <help>     Display this page, do not print the maze\n");
+                    return 0;
+                }
+                if (!(param == 's' || param == 'c' || param == 'r')) {
+                    printf("Error: unknown parameter -%c!\n", param);
+                } else {
+                    printf("Error: parameter -%c requires a value!\n", param);
+                }
+            }
+        }
+    }
 
     // ncurses init
     initscr();
+#ifdef DEBUG_GAME
     noecho();
     cbreak();
     raw();
+    printf("Cursor is here!\n");
+#else
     curs_set(0);
+#endif
 
     // define room size
     getmaxyx(stdscr, _temp_max_y, _temp_max_x);
@@ -58,6 +168,16 @@ int main(int argc, char** argv) {
     for (int i = 0; i < max_y; ++i) {
         room[i] = (Cell*)malloc(max_x * sizeof(Cell));
     }
+    maze = (int**)malloc(mazeHeight * sizeof(int*));
+    for (int i = 0; i < mazeHeight; ++i) {
+        maze[i] = (int*)malloc(mazeWidth * sizeof(int));
+    }
+
+    // generate a maze
+    generateMaze(maze, mazeHeight, mazeWidth, seed, finalRoom);
+
+    // check the neighbor rooms
+    checkWalls(maze, mazeHeight, mazeWidth, currRoomCoords[1], currRoomCoords[0], currRoomsWalls);
 
     // fill the cells
     for (int i = 0; i < max_y; ++i) {
@@ -69,6 +189,7 @@ int main(int argc, char** argv) {
             }
         }
     }
+
 
     // init the player
     room[y][x] = PLAYER;
@@ -116,6 +237,10 @@ int main(int argc, char** argv) {
         free(room[i]);
     }
     free(room);
+    for (int i = 0; i < mazeHeight; ++i) {
+        free(maze[i]);
+    }
+    free(maze);
 
     // end the ncurses library
     endwin();

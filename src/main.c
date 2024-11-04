@@ -73,9 +73,9 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < height; ++i) {
         maze[i] = (int *)malloc(width * sizeof(int));
     }
-    int* finalCoords = (int *)malloc(2 * sizeof(int));
+    int finalCoords[2];
     generateMaze(maze, height, width, seed, finalCoords);
-    printMaze(maze, height, width);
+    printMaze(maze, height, width, finalCoords);
     // free memory
     for (int i = 0; i < height; ++i) {
         free(maze[i]);

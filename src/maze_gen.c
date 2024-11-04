@@ -87,13 +87,17 @@ void generateMaze(int **maze, int height, int width, int seed, int* finalCoords)
     }
 }
 
-void printMaze(int **maze, int height, int width) {
+void printMaze(int **maze, int height, int width, int finalCoords[2]) {
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
             if (maze[i][j] == 1) {
                 printf("█");
             } else {
-                printf(" ");
+                if (i == finalCoords[1] && j == finalCoords[0]) {
+                    printf(".");
+                } else {
+                    printf(" ");
+                }
             }
         }
         printf("\n");
