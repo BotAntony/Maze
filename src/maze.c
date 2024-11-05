@@ -43,16 +43,16 @@ void drawRoom(Cell** room, int height, int width) {
     }
 }
 
-void displayMinimap(int max_y, int max_x, int** maze, int mazeHeight, int mazeWidth, int coords[2]) {
-    // TBA
-    int i = 0, j = 0;
-    for (; i < mazeHeight; ++i) {
-        for (; j < mazeWidth; ++j) {
+void displayMinimap(int max_y, int max_x, int** maze, int mazeHeight, int mazeWidth, int finalCoords[2], int currCoords[2]) {
+    for (int i = 0; i < mazeHeight; ++i) {
+        for (int j = 0; j < mazeWidth; ++j) {
             if (maze[i][j] == 1) {
                 mvaddch(i, j, '8');
             } else {
-                if (coords[0] == j && coords[1] == i) {
+                if (finalCoords[0] == j && finalCoords[1] == i) {
                     mvaddch(i, j, 'O');
+                } else if (currCoords[0] == j && currCoords[1] == i) {
+                    mvaddch(i, j, '!');
                 } else {
                     mvaddch(i, j, ' ');
                 }
@@ -61,7 +61,15 @@ void displayMinimap(int max_y, int max_x, int** maze, int mazeHeight, int mazeWi
     }
 }
 
+void resetWalls(Walls* walls) {
+    walls->left = false;
+    walls->right = false;
+    walls->top = false;
+    walls->bottom = false;
+}
+
 void checkWalls(int** maze, int mazeHeight, int mazeWidth, int currHeight, int currWidth, Walls* currRoomsWalls) {
+    resetWalls(currRoomsWalls);
     if (mazeHeight <= currHeight) {
         currRoomsWalls->right = true;
         return;
@@ -80,16 +88,9 @@ void checkWalls(int** maze, int mazeHeight, int mazeWidth, int currHeight, int c
     if (currHeight <= 0 || maze[currHeight - 1][currWidth] == 1) {
         currRoomsWalls->top = true;
     }
-    if (currHeight <= mazeHeight || maze[currHeight + 1][currWidth] == 1) {
+    if (currHeight >= mazeHeight || maze[currHeight + 1][currWidth] == 1) {
         currRoomsWalls->bottom = true;
     }
-}
-
-void resetWalls(Walls* walls) {
-    walls->left = false;
-    walls->right = false;
-    walls->top = false;
-    walls->bottom = false;
 }
 
 void fillRoom(Walls currRoomsWalls, Cell** room, int max_y, int max_x) {
@@ -110,12 +111,42 @@ void fillRoom(Walls currRoomsWalls, Cell** room, int max_y, int max_x) {
     }
 }
 
+void changePlayerCoordinate(bool wall, int* axis, int* currRoomCoord, int max_coord, bool backward) {
+    if (wall) {
+        if (!backward && *axis >= max_coord - 1) {
+            return;
+        } else if (backward && *axis <= 1) {
+            return;
+        }
+    }
+
+    if (!wall || (*axis - 2 > 0 && backward) || (*axis < max_coord - 3 && !backward)) {
+        if (backward) *axis -= 1;
+        else *axis += 1;
+    }
+
+    if (!wall || (*axis - 1 > 0 && backward) || (*axis < max_coord - 2 && !backward)) {
+        if (backward) *axis -= 1;
+        else *axis += 1;
+    }
+
+     if ((*axis <= 0 || *axis >= max_coord - 1) && *currRoomCoord > 0 && *currRoomCoord < max_coord - 1) {
+         if (backward) {
+             *currRoomCoord -= 1;
+             *axis = max_coord - 3;
+         } else {
+             *currRoomCoord += 1;
+             *axis = 1;
+         }
+     }
+}
+
 int returnError(char* error) {
     // end the ncurses library
     endwin();
     echo();
     curs_set(1);
-    printf("Error: %s", error);
+    printf("Error: %s\n", error);
     return -1;
 }
 
@@ -134,6 +165,7 @@ int main(int argc, char** argv) {
     int _temp_max_x, _temp_max_y;
 
     // process args
+    // BUGS: ignores `-m` parameter if multiple flags are presented
     for (int i = 1; i < argc; ++i) {
         if (argv[i][0] == '-') {
             param = argv[i][1];
@@ -155,7 +187,7 @@ int main(int argc, char** argv) {
                         seed = atoi(argv[++i]);
                         break;
                     default:
-                        printf("Error: unknown parameter!\n");
+                        returnError("unknown parameter!");
                         break;
                 }
             } else {
@@ -218,47 +250,53 @@ int main(int argc, char** argv) {
     room[y][x] = PLAYER;
     drawRoom(room, max_y, max_x);
     if (minimap) {
-        displayMinimap(max_y, max_x, maze, mazeHeight, mazeWidth);
+        displayMinimap(max_y, max_x, maze, mazeHeight, mazeWidth, finalRoom, currRoomCoords);
     }
     refresh();
 
     // game loop
+    // BUGs: doesn't update rooms
+    //       occasional segfauls
+    //       player can go inside a wall during switching to another room
     while ((ch = getch()) != 'q') {
         // return error if the resolution is less than the initial one
         getmaxyx(stdscr, _temp_max_y, _temp_max_x);
         if (_temp_max_x < max_x || _temp_max_y < max_y) {
-            return returnError("the current resolution is smaller than the initial one!\n");
+            return returnError("the current resolution is smaller than the initial one!");
         }
-
         room[y][x] = EMPTY; // clear previous position
 
         switch (ch) {
             case 'w':
             case KEY_UP:
-                if (y > 2) y -= 2;
-                else if (y > 1) --y;
+                changePlayerCoordinate(currRoomsWalls.top, &y, &currRoomCoords[1], max_y, true);
+                checkWalls(maze, mazeHeight, mazeWidth, currRoomCoords[1], currRoomCoords[0], &currRoomsWalls);
+                fillRoom(currRoomsWalls, room, max_y, max_x);
                 break;
             case 's':
             case KEY_DOWN:
-                if (y < max_y - 3) y += 2;
-                else if (y < max_y - 2) ++y;
+                changePlayerCoordinate(currRoomsWalls.bottom, &y, &currRoomCoords[1], max_y, false);
+                checkWalls(maze, mazeHeight, mazeWidth, currRoomCoords[1], currRoomCoords[0], &currRoomsWalls);
+                fillRoom(currRoomsWalls, room, max_y, max_x);
                 break;
             case 'a':
             case KEY_LEFT:
-                if (x > 2) x -= 2;
-                else if (x > 1) --x;
+                changePlayerCoordinate(currRoomsWalls.left, &x, &currRoomCoords[0], max_x, true);
+                checkWalls(maze, mazeHeight, mazeWidth, currRoomCoords[1], currRoomCoords[0], &currRoomsWalls);
+                fillRoom(currRoomsWalls, room, max_y, max_x);
                 break;
             case 'd':
             case KEY_RIGHT:
-                if (x < max_x - 3) x += 2;
-                else if (x < max_x - 2) ++x;
+                changePlayerCoordinate(currRoomsWalls.right, &x, &currRoomCoords[0], max_x, false);
+                checkWalls(maze, mazeHeight, mazeWidth, currRoomCoords[1], currRoomCoords[0], &currRoomsWalls);
+                fillRoom(currRoomsWalls, room, max_y, max_x);
                 break;
         }
 
         room[y][x] = PLAYER;
         drawRoom(room, max_y, max_x);
         if (minimap) {
-            displayMinimap(max_y, max_x, maze, mazeHeight, mazeWidth);
+            displayMinimap(max_y, max_x, maze, mazeHeight, mazeWidth, finalRoom, currRoomCoords);
         }
         refresh();
     }
