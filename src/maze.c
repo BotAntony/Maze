@@ -164,7 +164,7 @@ int main(int argc, char** argv) {
                     case 'h':
                         printf("This program starts a simple game where you need to find a specific room in a maze\n\n");
                         printf("Usage:\n    maze [options]\n\n");
-                        printf("    use `wasd` to move and `q` to exit");
+                        printf("    use `wasd` to move and `q` to exit\n");
                         printf("Options:\n");
                         printf("    -c <cols>     Set the amount of columns (10 by defualt, range 4-64)\n");
                         printf("    -r <rows>     Set the amount of rows (10 by default, range 4-64)\n");
