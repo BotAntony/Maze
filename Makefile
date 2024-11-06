@@ -8,14 +8,14 @@ BIN_DIR = bin
 
 # Find all .c files in the source directory
 SRCS = $(wildcard $(SRC_DIR)/*.c)
-GAME_SRCS = $(filter-out $(SRC_DIR)/main.c, $(SRCS))
+GAME_SRCS = $(filter-out $(SRC_DIR)/print_maze.c, $(SRCS))
 
 # Define executables
 GAME_EXEC = $(BIN_DIR)/maze
 PRINT_EXEC = $(BIN_DIR)/print_maze
 
 # Source files for each executable
-PRINT_SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/maze_gen.c $(SRC_DIR)/stack.c
+PRINT_SRCS = $(SRC_DIR)/print_maze.c $(SRC_DIR)/maze_gen.c $(SRC_DIR)/stack.c
 
 # Default target to build everything
 .PHONY: all
