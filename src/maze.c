@@ -70,25 +70,17 @@ void resetWalls(Walls* walls) {
 
 void checkWalls(int** maze, int mazeHeight, int mazeWidth, int currHeight, int currWidth, Walls* currRoomsWalls) {
     resetWalls(currRoomsWalls);
-    if (mazeHeight <= currHeight) {
-        currRoomsWalls->right = true;
-        return;
-    }
-    if (mazeWidth <= currWidth) {
-        currRoomsWalls->bottom = true;
-        return;
-    }
     // check whether the neighbor rooms are walls
     if (currWidth <= 0 || maze[currHeight][currWidth - 1] == 1) {
         currRoomsWalls->left = true;
     }
-    if (currWidth >= mazeWidth || maze[currHeight][currWidth + 1] == 1) {
+    if (mazeWidth <= currWidth || currWidth >= mazeWidth || maze[currHeight][currWidth + 1] == 1) {
         currRoomsWalls->right = true;
     }
     if (currHeight <= 0 || maze[currHeight - 1][currWidth] == 1) {
         currRoomsWalls->top = true;
     }
-    if (currHeight >= mazeHeight || maze[currHeight + 1][currWidth] == 1) {
+    if (mazeHeight <= currHeight | currHeight >= mazeHeight || maze[currHeight + 1][currWidth] == 1) {
         currRoomsWalls->bottom = true;
     }
 }
@@ -112,14 +104,6 @@ void fillRoom(Walls currRoomsWalls, Cell** room, int max_y, int max_x) {
 }
 
 void changePlayerCoordinate(bool wall, int* axis, int* currRoomCoord, int max_coord, bool backward) {
-    if (wall) {
-        if (!backward && *axis >= max_coord - 1) {
-            return;
-        } else if (backward && *axis <= 1) {
-            return;
-        }
-    }
-
     if (!wall || (*axis - 2 > 0 && backward) || (*axis < max_coord - 3 && !backward)) {
         if (backward) *axis -= 1;
         else *axis += 1;
@@ -130,15 +114,25 @@ void changePlayerCoordinate(bool wall, int* axis, int* currRoomCoord, int max_co
         else *axis += 1;
     }
 
-     if ((*axis <= 0 || *axis >= max_coord - 1) && *currRoomCoord > 0 && *currRoomCoord < max_coord - 1) {
-         if (backward) {
-             *currRoomCoord -= 1;
-             *axis = max_coord - 3;
-         } else {
-             *currRoomCoord += 1;
-             *axis = 1;
-         }
-     }
+    if (wall) {
+        if (!backward && *axis >= max_coord - 1) {
+            *axis = max_coord - 2;
+            return;
+        } else if (backward && *axis <= 1) {
+            *axis = 1;
+            return;
+        }
+    }
+
+    if (*axis <= 0 || *axis >= max_coord - 1) {
+        if (backward) {
+            *currRoomCoord -= 1;
+            *axis = max_coord - 3;
+        } else {
+            *currRoomCoord += 1;
+            *axis = 1;
+        }
+    }
 }
 
 int returnError(char* error) {
@@ -165,53 +159,47 @@ int main(int argc, char** argv) {
     int _temp_max_x, _temp_max_y;
 
     // process args
-    // BUGS: ignores `-m` parameter if multiple flags are presented
     for (int i = 1; i < argc; ++i) {
         if (argv[i][0] == '-') {
             param = argv[i][1];
-            if (i + 1 < argc) {
+            if (param == 'r' || param == 'c' || param == 's' || param == 'm' || param == 'h') {
                 switch (param) {
-                    case 'r':
-                        mazeHeight = atoi(argv[++i]);
-                        if (mazeHeight < 4 || mazeHeight > 64) {
-                            mazeHeight = HEIGHT_CONST;
-                        }
-                        break;
-                    case 'c':
-                        mazeWidth = atoi(argv[++i]);
-                        if (mazeWidth < 4 || mazeWidth > 64) {
-                            mazeWidth = WIDTH_CONST;
-                        }
-                        break;
-                    case 's':
-                        seed = atoi(argv[++i]);
-                        break;
-                    default:
-                        returnError("unknown parameter!");
-                        break;
-                }
-            } else {
-                if (param == 'h') {
-                    printf("This program starts a simple game where you need to find a specific room in a maze\n\n");
-                    printf("Usage:\n    maze [options]\n\n");
-                    printf("    use `wasd` to move and `q` to exit");
-                    printf("Options:\n");
-                    printf("    -c <cols>     Set the amount of columns (10 by defualt, range 4-64)\n");
-                    printf("    -r <rows>     Set the amount of rows (10 by default, range 4-64)\n");
-                    printf("    -s <seed>     Set a seed (time() by default, an integer value)\n");
-                    printf("    -m <seed>     Show a minimap\n");
-                    printf("    -h <help>     Display this page, do not print the maze\n");
-                    return 0;
-                }
-                if (!(param == 's' || param == 'c' || param == 'r' || param == 'm')) {
-                    printf("Error: unknown parameter -%c!\n", param);
-                } else {
-                    if (param == 'm') {
+                    case 'h':
+                        printf("This program starts a simple game where you need to find a specific room in a maze\n\n");
+                        printf("Usage:\n    maze [options]\n\n");
+                        printf("    use `wasd` to move and `q` to exit");
+                        printf("Options:\n");
+                        printf("    -c <cols>     Set the amount of columns (10 by defualt, range 4-64)\n");
+                        printf("    -r <rows>     Set the amount of rows (10 by default, range 4-64)\n");
+                        printf("    -s <seed>     Set a seed (time() by default, an integer value)\n");
+                        printf("    -m <seed>     Show a minimap\n");
+                        printf("    -h <help>     Display this page, do not print the maze\n");
+                        return 0;
+                    case 'm':
                         minimap = true;
-                    } else {
-                        printf("Error: parameter -%c requires a value!\n", param);
+                        break;
+                }
+                if (i + 1 < argc) {
+                    switch (param) {
+                        case 'r':
+                            mazeHeight = atoi(argv[++i]);
+                            if (mazeHeight < 4 || mazeHeight > 64) {
+                                mazeHeight = HEIGHT_CONST;
+                            }
+                            break;
+                        case 'c':
+                            mazeWidth = atoi(argv[++i]);
+                            if (mazeWidth < 4 || mazeWidth > 64) {
+                                mazeWidth = WIDTH_CONST;
+                            }
+                            break;
+                        case 's':
+                            seed = atoi(argv[++i]);
+                            break;
                     }
                 }
+            } else {
+                printf("Error: unknown parameter '-%c'", param);
             }
         }
     }
@@ -255,7 +243,7 @@ int main(int argc, char** argv) {
     refresh();
 
     // game loop
-    // BUGs: doesn't update rooms
+    // BUGS: doesn't update rooms
     //       occasional segfauls
     //       player can go inside a wall during switching to another room
     while ((ch = getch()) != 'q') {
@@ -293,6 +281,17 @@ int main(int argc, char** argv) {
                 break;
         }
 
+        if (y >= max_y || x >= max_x) {
+            endwin();
+            echo();
+            curs_set(1);
+
+            printf("Error!!!\n");
+            printf("max_y: %d, y: %d\n", max_y, y);
+            printf("max_x: %d, x: %d\n", max_x, x);
+
+            return -1;
+        }
         room[y][x] = PLAYER;
         drawRoom(room, max_y, max_x);
         if (minimap) {
