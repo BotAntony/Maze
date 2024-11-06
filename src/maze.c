@@ -135,13 +135,10 @@ void changePlayerCoordinate(bool wall, int* axis, int* currRoomCoord, int max_co
     }
 }
 
-int returnError(char* error) {
-    // end the ncurses library
+void stopLibrary() {
     endwin();
     echo();
     curs_set(1);
-    printf("Error: %s\n", error);
-    return -1;
 }
 
 int main(int argc, char** argv) {
@@ -250,7 +247,9 @@ int main(int argc, char** argv) {
         // return error if the resolution is less than the initial one
         getmaxyx(stdscr, _temp_max_y, _temp_max_x);
         if (_temp_max_x < max_x || _temp_max_y < max_y) {
-            return returnError("the current resolution is smaller than the initial one!");
+            stopLibrary();
+            printf("Error: the current resolution is smaller than the initial one!\n");
+            return -1;
         }
         room[y][x] = EMPTY; // clear previous position
 
@@ -282,15 +281,18 @@ int main(int argc, char** argv) {
         }
 
         if (y >= max_y || x >= max_x) {
-            endwin();
-            echo();
-            curs_set(1);
+            stopLibrary();
 
             printf("Error!!!\n");
             printf("max_y: %d, y: %d\n", max_y, y);
             printf("max_x: %d, x: %d\n", max_x, x);
 
             return -1;
+        }
+        if (finalRoom[0] == currRoomCoords[0] && finalRoom[1] == currRoomCoords[1]) {
+            stopLibrary();
+            printf("You won!\nCongratz!!!\n");
+            return 0;
         }
         room[y][x] = PLAYER;
         drawRoom(room, max_y, max_x);
@@ -311,9 +313,7 @@ int main(int argc, char** argv) {
     free(maze);
 
     // end the ncurses library
-    endwin();
-    echo();
-    curs_set(1);
+    stopLibrary();
 
     return 0;
 }
